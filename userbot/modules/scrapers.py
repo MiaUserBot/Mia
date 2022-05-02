@@ -495,9 +495,9 @@ async def urban_dict(ud_e):
         await ud_e.edit(query + "**için hiçbir sonuç bulunamadı**")
 
 
-@register(pattern=r"^.tts(?: |$)([\s\S]*)")
+@register(outgoing=True, pattern=r"^.tts(?: |$)([\s\S]*)")
 async def text_to_speech(event):
-    """ .tts komutu ile Google'ın metinden yazıya dönüştürme servisi kullanılabilir. """
+    """ .tts """
     if event.fwd_from:
         return
     ttss = event.pattern_match.group(1)
@@ -508,12 +508,17 @@ async def text_to_speech(event):
         if event.is_reply:
             sarki = rep_msg.text
         else:
-            await event.edit("`Sese çevirmem için komutun yanında bir mesaj yazmalısın.`")
+            await event.edit("`Sese dönüştürmek için komutun yanında mesaj yazın.`")
             return
 
-    await event.edit(f"__Metniniz sese çevriliyor...__")
-    async with bot.conversation(1678833172) as conv:
-        await force_send_message(event=event,text=f"/tomp3 {ttss}",chat=1678833172)
+    await event.edit(f"__Mesajınız sese dönüştürülüyor...__")
+    chat = "@MrTTSbot"
+    async with bot.conversation(chat) as conv:
+        try:     
+            await conv.send_message(f"/tomp3 {ttss}")
+        except YouBlockedUserError:
+            await event.reply(f"`@mrTTsbot`a start ver.`")
+            return
         ses = await conv.wait_event(events.NewMessage(incoming=True,from_users=1678833172))
         await event.client.send_read_acknowledge(conv.chat_id)
         indir = await ses.download_media()
@@ -524,12 +529,11 @@ async def text_to_speech(event):
             await event.delete()
             os.remove("MrTTSbot.ogg")
         else:
-            await event.edit("`Bir hata meydana geldi!`")
-
+            await event.edit("`Bir hata oluştu.`")
 
         if BOTLOG:
             await event.client.send_message(
-                BOTLOG_CHATID, "Metin başarıyla sese dönüştürüldü!")
+                BOTLOG_CHATID, "`Mesaj başarıyla dönüştürüldü.")
 
 
 @register(pattern="^.imdb (.*)")
